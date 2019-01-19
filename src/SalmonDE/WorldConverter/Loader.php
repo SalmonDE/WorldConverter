@@ -52,7 +52,6 @@ class Loader extends PluginBase {
         $time = time();
 
         foreach($provider->getAllChunks() as $chunk){
-            var_dump($chunk->getX().';'.$chunk->getZ());
             try{
                 foreach($chunk->getEntities() as $entity){
                     $entity->close();
