@@ -5,4 +5,5 @@ version: 1.0.0
 api: [4.0.0]
 commands:
     convertworld:
+        usage: /convertworld <name>
         permission: convert.world.cmd
