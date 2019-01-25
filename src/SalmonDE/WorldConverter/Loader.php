@@ -37,7 +37,7 @@ class Loader extends PluginBase {
             return false;
         }
 
-        if($level === null){
+        if(($level ?? null) === null){
             $sender->sendMessage('§cLevel not found');
             return false;
         }
