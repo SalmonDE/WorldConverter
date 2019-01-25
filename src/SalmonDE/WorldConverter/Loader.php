@@ -37,6 +37,11 @@ class Loader extends PluginBase {
             return false;
         }
 
+        if($level === null){
+            $sender->sendMessage('§cLevel not found');
+            return;
+        }
+
         $level->setAutoSave(false);
 
         $total = 0;
