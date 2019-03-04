@@ -73,7 +73,13 @@ class Loader extends PluginBase {
     public function convertAllBlocks(LevelProvider $provider, int &$total = 0, int &$processed = 0, int &$changed = 0, int &$time): void{
         $time = time();
 
+        $levelName = $provider->getLevelData()->getName();
+        $chunkCount = $provider->calculateChunkCount();
+        $chunksConverted = 0;
+
         foreach($provider->getAllChunks() as $chunk){
+            $this->getLogger()->notice('Converting level "'.$levelName.'"; Chunk '.(++$chunksConverted).'/'.$chunkCount);
+
             try{
                 foreach($chunk->getEntities() as $entity){
                     $entity->close();
