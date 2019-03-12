@@ -78,7 +78,8 @@ class Loader extends PluginBase {
 		$chunksConverted = 0;
 
 		foreach($provider->getAllChunks() as $chunk){
-			$this->getLogger()->notice('Converting level "'.$levelName.'"; Chunk '.(++$chunksConverted).'/'.$chunkCount);
+			$percentage = round(++$chunksConverted * 100 / $chunkCount, 2);
+			$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
 
 			try{
 				foreach($chunk->getEntities() as $entity){
