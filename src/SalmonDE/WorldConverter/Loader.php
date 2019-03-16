@@ -3,6 +3,7 @@ declare(strict_types = 1);
 
 namespace SalmonDE\WorldConverter;
 
+use Ds\Map;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\level\format\EmptySubChunk;
@@ -18,6 +19,37 @@ class Loader extends PluginBase {
 		$this->saveResource('config.yml');
 		$this->saveResource('blocks.json');
 		$this->blocks = json_decode(file_get_contents($this->getDataFolder().'blocks.json'), true)['blocks'];
+
+		$blockMapping = new Map();
+		foreach($this->blocks as $key => $replacement){
+			$keyParts = explode(':', (string) $key);
+			$replacementKeys = explode(':', (string) $replacement);
+
+			$replaceId = (int) $replacementKeys[0];
+			$replaceMeta = $replacementKeys[1] ?? null;
+			if($replaceMeta !== null){
+				$replaceMeta = (int) $replaceMeta;
+			}
+
+			$blockId = (int) $keyParts[0];
+			if(isset($keyParts[1])){
+				$blockMapping[$this->getFullBlock($blockId, $blockMeta = (int) $keyParts[1])] = [
+					'id' => $replaceId,
+					'meta' => $replaceMeta ?? $blockMeta
+				];
+			}else{
+				for($meta = 0; $meta < 16; ++$meta){
+					$blockMapping[$this->getFullBlock($blockId, $meta)] = [
+						'id' => $replaceId,
+						'meta' => $replaceMeta ?? $meta
+					];
+				}
+			}
+		}
+	}
+
+	private function getFullBlock(int $id, int $meta): int{
+		return ($id << 4) | $meta;
 	}
 
 	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $params): bool{
@@ -101,16 +133,10 @@ class Loader extends PluginBase {
 						for($z = 0; $z < 16; ++$z){
 							++$processed;
 
-							$blockId = $subChunk->getBlockId($x, $y, $z);
-							$blockData = $subChunk->getBlockData($x, $y, $z);
+							$block = $subChunk->getFullBlock($x, $y, $z);
 
-							if(isset($this->blocks[(string) $blockId])){
-								$newBlockId = (int) $this->blocks[(string) $blockId];
-								$subChunk->setBlock($x, $y, $z, $newBlockId, $blockData);
-								++$changed;
-							}elseif(isset($this->blocks[$blockId.':'.$blockData])){
-								$parts = explode(':', $this->blocks[$blockId.':'.$blockData]);
-								$subChunk->setBlock($x, $y, $z, (int) $parts[0], (int) $parts[1]);
+							if(isset($this->blocks[$block])){
+								$subChunk->setBlock($x, $y, $z, $this->blocks[$block]['id'], $this->blocks[$block]['meta']);
 								++$changed;
 							}
 						}
