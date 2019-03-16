@@ -109,6 +109,7 @@ class Loader extends PluginBase {
 
 		$levelName = $provider->getLevelData()->getName();
 		$chunkCount = $provider->calculateChunkCount();
+		$total = $chunkCount * 65536;
 		$chunksConverted = 0;
 
 		foreach($provider->getAllChunks() as $chunk){
@@ -122,8 +123,6 @@ class Loader extends PluginBase {
 			}catch(\Throwable $e){
 				$this->getLogger()->warning('Corrupted entities in chunk '.$chunk->getX().';'.$chunk->getZ());
 			}
-
-			$total += 65536;
 
 			foreach($chunk->getSubChunks() as $subChunk){
 				if($subChunk instanceof EmptySubChunk){
