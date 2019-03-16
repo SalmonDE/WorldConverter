@@ -46,6 +46,8 @@ class Loader extends PluginBase {
 				}
 			}
 		}
+
+		$this->blocks = $blockMapping;
 	}
 
 	private function getFullBlock(int $id, int $meta): int{
