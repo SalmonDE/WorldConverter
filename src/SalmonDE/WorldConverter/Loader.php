@@ -33,16 +33,16 @@ class Loader extends PluginBase {
 
 			$blockId = (int) $keyParts[0];
 			if(isset($keyParts[1])){
-				$blockMapping[$this->getFullBlock($blockId, $blockMeta = (int) $keyParts[1])] = [
-					'id' => $replaceId,
-					'meta' => $replaceMeta ?? $blockMeta
-				];
+				$fullId = $replaceId,;
+				$fullMeta = $replaceMeta ?? $blockMeta;
+
+				$blockMapping[$this->getFullBlock($blockId, $blockMeta = (int) $keyParts[1])] = $this->getFullBlock($fullId, $fullMeta);
 			}else{
 				for($meta = 0; $meta < 16; ++$meta){
-					$blockMapping[$this->getFullBlock($blockId, $meta)] = [
-						'id' => $replaceId,
-						'meta' => $replaceMeta ?? $meta
-					];
+					$fullId = $replaceId,
+					$fullMeta = $replaceMeta ?? $meta
+
+					$blockMapping[$this->getFullBlock($blockId, $meta)] = $this->getFullBlock($fullId, $fullMeta);
 				}
 			}
 		}
@@ -137,7 +137,7 @@ class Loader extends PluginBase {
 							$block = $subChunk->getFullBlock($x, $y, $z);
 
 							if(isset($this->blocks[$block])){
-								$subChunk->setBlock($x, $y, $z, $this->blocks[$block]['id'], $this->blocks[$block]['meta']);
+								$subChunk->setFullBlock($x, $y, $z, $this->blocks[$block]);
 								++$changed;
 							}
 						}
