@@ -33,14 +33,14 @@ class Loader extends PluginBase {
 
 			$blockId = (int) $keyParts[0];
 			if(isset($keyParts[1])){
-				$fullId = $replaceId,;
+				$fullId = $replaceId;
 				$fullMeta = $replaceMeta ?? $blockMeta;
 
 				$blockMapping[$this->getFullBlock($blockId, $blockMeta = (int) $keyParts[1])] = $this->getFullBlock($fullId, $fullMeta);
 			}else{
 				for($meta = 0; $meta < 16; ++$meta){
-					$fullId = $replaceId,
-					$fullMeta = $replaceMeta ?? $meta
+					$fullId = $replaceId;
+					$fullMeta = $replaceMeta ?? $meta;
 
 					$blockMapping[$this->getFullBlock($blockId, $meta)] = $this->getFullBlock($fullId, $fullMeta);
 				}
