@@ -19,11 +19,15 @@ class Loader extends PluginBase {
 
 	private $blocks = [];
 	private $saveThreshold;
+	private $progressMessageFrequency;
 
 	public function onEnable(): void{
 		$this->saveResource('config.yml');
 		$this->saveResource('blocks.json');
+
 		$this->saveThreshold = max(1, $this->getConfig()->get('saveThreshold'));
+		$this->progressMessageFrequency = max(1, $this->getConfig()->get('progressMessageFrequency'));
+
 		$this->blocks = json_decode(file_get_contents($this->getDataFolder().'blocks.json'), true)['blocks'];
 
 		$blockMapping = new Map();
@@ -167,7 +171,10 @@ class Loader extends PluginBase {
 			$percentage = round(++$chunksConverted * 100 / $chunkCount, 2);
 
 			if($skipChunks !== false and ($skipChunks[$chunkHash] ?? false) === true){
-				$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; §cSkipped Chunk §b'.($chunksConverted).'/'.$chunkCount);
+				if($chunksConverted % $this->progressMessageFrequency === 0){
+					$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; §cSkipped Chunk §b'.($chunksConverted).'/'.$chunkCount);
+				}
+
 				unset($skipChunks[$chunkHash]);
 
 				if($skipChunks === []){
@@ -176,7 +183,9 @@ class Loader extends PluginBase {
 				continue;
 			}
 
-			$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
+			if($chunksConverted % $this->progressMessageFrequency === 0){
+				$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
+			}
 
 			try{
 				foreach($chunk->getEntities() as $entity){
