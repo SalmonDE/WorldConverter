@@ -111,12 +111,6 @@ class Loader extends PluginBase {
 
 		$level->setAutoSave(true);
 
-		foreach($level->getPlayers() as $player){
-			foreach($player->usedChunks as $key => $v){
-				$player->usedChunks[$key] = false;
-			}
-		}
-
 		$msg = '§a(Conversion of '.$level->getFolderName().') Time spent: '.($time).' seconds; Total blocks: '.number_format($total).'; Blocks processed: '.number_format($processed).'; Blocks changed: '.number_format($changed);
 		$sender->sendMessage($msg);
 		$this->getLogger()->notice($msg);
