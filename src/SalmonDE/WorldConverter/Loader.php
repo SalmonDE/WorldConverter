@@ -136,7 +136,33 @@ class Loader extends PluginBase {
 		$saveFilePath = $provider->getPath().'convertedChunks';
 		$skipChunks = $this->readSaveFile($saveFilePath);
 
+		$deleteSaveFile = true;
+
+		$inputThread = new InputCheckThread();
+		$inputThread->start();
+
 		foreach($provider->getAllChunks() as $chunk){
+			if(!$inputThread->isRunning() and !$inputThread->isJoined()){
+				$inputThread->join();
+
+				$input = $inputThread->getInput();
+				if($input === 'stop'){
+					$this->getLogger()->notice('Stopping conversion ...');
+					$deleteSaveFile = false;
+
+					if(count($chunks) > 0){
+						$this->getLogger()->notice('Saving pending progress ...');
+						$this->writeSaveFile($saveFilePath, $chunks);
+					}
+
+					$this->getLogger()->notice('Conversion stopped, time passed: '.(time() - $time));
+					break;
+				}
+
+				$inputThread = new InputCheckThread();
+				$inputThread->start();
+			}
+
 			$chunkHash = Level::chunkHash($chunk->getX(), $chunk->getZ());
 			$percentage = round(++$chunksConverted * 100 / $chunkCount, 2);
 
@@ -188,11 +214,10 @@ class Loader extends PluginBase {
 			if($chunksConverted % $this->saveThreshold === 0){
 				$this->getLogger()->notice('Saving Progress ...');
 				$this->writeSaveFile($saveFilePath, $chunks);
-				$chunks = [];
 			}
 		}
 
-		if(file_exists($saveFilePath)){
+		if($deleteSaveFile === true and file_exists($saveFilePath)){
 			unlink($saveFilePath);
 		}
 
@@ -214,12 +239,14 @@ class Loader extends PluginBase {
 		return $data;
 	}
 
-	private function writeSaveFile(string $saveFilePath, array $processedChunks): void{
+	private function writeSaveFile(string $saveFilePath, array &$processedChunks): void{
 		$saveFile = fopen($saveFilePath, 'a');
 
 		$data = implode(self::SAVE_DELIMITER, $processedChunks).self::SAVE_DELIMITER;
 
 		fwrite($saveFile, $data);
 		fclose($saveFile);
+
+		$processedChunks = [];
 	}
 }
