@@ -4,20 +4,26 @@ declare(strict_types = 1);
 namespace SalmonDE\WorldConverter;
 
 use Ds\Map;
+use pocketmine\block\BlockFactory;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\level\format\EmptySubChunk;
 use pocketmine\level\format\io\LevelProvider;
+use pocketmine\level\Level;
 use pocketmine\plugin\PluginBase;
 use pocketmine\player\Player;
 
 class Loader extends PluginBase {
 
+	private const SAVE_DELIMITER = ';';
+
 	private $blocks = [];
+	private $saveThreshold;
 
 	public function onEnable(): void{
 		$this->saveResource('config.yml');
 		$this->saveResource('blocks.json');
+		$this->saveThreshold = max(1, $this->getConfig()->get('saveThreshold'));
 		$this->blocks = json_decode(file_get_contents($this->getDataFolder().'blocks.json'), true)['blocks'];
 
 		$blockMapping = new Map();
@@ -41,8 +47,8 @@ class Loader extends PluginBase {
 		$this->blocks = $blockMapping;
 
 		foreach($this->blocks as $from => $to){
-			$from = \pocketmine\block\BlockFactory::fromFullBlock($from);
-			$to = \pocketmine\block\BlockFactory::fromFullBlock($to);
+			$from = BlockFactory::fromFullBlock($from);
+			$to = BlockFactory::fromFullBlock($to);
 			$this->getLogger()->debug('Mapped '.($from->getName() === 'Unknown' ? $from->getId().':'.$from->getMeta() : $from->getName()).' to '.($to->getName() === 'Unknown' ? $to->getId().':'.$to->getMeta() : $to->getName()));
 		}
 	}
@@ -125,8 +131,25 @@ class Loader extends PluginBase {
 		$total = $chunkCount * 65536;
 		$chunksConverted = 0;
 
+		$chunks = [];
+
+		$saveFilePath = $provider->getPath().'convertedChunks';
+		$skipChunks = $this->readSaveFile($saveFilePath);
+
 		foreach($provider->getAllChunks() as $chunk){
+			$chunkHash = Level::chunkHash($chunk->getX(), $chunk->getZ());
 			$percentage = round(++$chunksConverted * 100 / $chunkCount, 2);
+
+			if($skipChunks !== false and ($skipChunks[$chunkHash] ?? false) === true){
+				$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; §cSkipped Chunk §b'.($chunksConverted).'/'.$chunkCount);
+				unset($skipChunks[$chunkHash]);
+
+				if($skipChunks === []){
+					$skipChunks = false;
+				}
+				continue;
+			}
+
 			$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
 
 			try{
@@ -159,8 +182,44 @@ class Loader extends PluginBase {
 			}
 
 			$provider->saveChunk($chunk);
+
+			$chunks[] = $chunkHash;
+
+			if($chunksConverted % $this->saveThreshold === 0){
+				$this->getLogger()->notice('Saving Progress ...');
+				$this->writeSaveFile($saveFilePath, $chunks);
+				$chunks = [];
+			}
+		}
+
+		if(file_exists($saveFilePath)){
+			unlink($saveFilePath);
 		}
 
 		$time = time() - $time;
+	}
+
+	private function readSaveFile($saveFilePath){
+		if(!file_exists($saveFilePath)){
+			return false;
+		}
+
+		$data = explode(self::SAVE_DELIMITER, file_get_contents($saveFilePath));
+		$data = array_flip($data);
+
+		foreach($data as $chunk => $_){
+			$data[$chunk] = true;
+		}
+
+		return $data;
+	}
+
+	private function writeSaveFile(string $saveFilePath, array $processedChunks): void{
+		$saveFile = fopen($saveFilePath, 'a');
+
+		$data = implode(self::SAVE_DELIMITER, $processedChunks).self::SAVE_DELIMITER;
+
+		fwrite($saveFile, $data);
+		fclose($saveFile);
 	}
 }
