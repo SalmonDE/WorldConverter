@@ -28,7 +28,17 @@ class InputCheckThread extends Thread {
 		$this->input = $input;
 	}
 
-	private function waitForInput(int $length = 1024): string{
-		return trim(stream_get_line(fopen('php://stdin', 'r'), $length, PHP_EOL));
+	private function waitForInput(int $length = 1024, int $timeout = 5): string{
+		$cmdLine = fopen('php://stdin', 'r');
+
+		$read = [$cmdLine];
+		$write = [];
+		$except = [];
+
+		if(stream_select($read, $write, $except, $timeout) > 0){
+			return trim(stream_get_line($cmdLine, $length, PHP_EOL));
+		}else{
+			return ''; // hack to prevent blocking the main thread on join
+		}
 	}
 }

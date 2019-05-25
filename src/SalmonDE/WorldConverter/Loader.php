@@ -7,9 +7,9 @@ use Ds\Map;
 use pocketmine\block\BlockFactory;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
-use pocketmine\level\format\EmptySubChunk;
-use pocketmine\level\format\io\LevelProvider;
-use pocketmine\level\Level;
+use pocketmine\world\format\EmptySubChunk;
+use pocketmine\world\format\io\WorldProvider;
+use pocketmine\world\World;
 use pocketmine\plugin\PluginBase;
 use pocketmine\player\Player;
 
@@ -88,49 +88,49 @@ class Loader extends PluginBase {
 			if(empty($params[0])){
 				return false;
 			}else{
-				if($this->getServer()->getLevelManager()->loadLevel($params[0])){
-					$level = $this->getServer()->getLevelManager()->getLevelByName($params[0]);
+				if($this->getServer()->getWorldManager()->loadWorld($params[0])){
+					$world = $this->getServer()->getWorldManager()->getWorldByName($params[0]);
 				}else{
-					$sender->sendMessage('Level not found');
+					$sender->sendMessage('World not found');
 				}
 			}
 		}elseif($sender instanceof Player){
-			$level = $sender->getLevel();
+			$world = $sender->getWorld();
 		}else{
 			return false;
 		}
 
-		if(($level ?? null) === null){
-			$sender->sendMessage('§cLevel not found');
+		if(($world ?? null) === null){
+			$sender->sendMessage('§cWorld not found');
 			return false;
 		}
 
-		$level->setAutoSave(false);
+		$world->setAutoSave(false);
 
 		$total = 0;
 		$processed = 0;
 		$changed = 0;
 		$time = 0;
 
-		$this->convertAllBlocks($level->getProvider(), $total, $processed, $changed, $time);
+		$this->convertAllBlocks($world->getProvider(), $total, $processed, $changed, $time);
 
-		foreach($level->getChunks() as $chunk){
-			$level->unloadChunk($chunk->getX(), $chunk->getZ(), false, false);
-			$level->loadChunk($chunk->getX(), $chunk->getZ(), false);
+		foreach($world->getChunks() as $chunk){
+			$world->unloadChunk($chunk->getX(), $chunk->getZ(), false, false);
+			$world->loadChunk($chunk->getX(), $chunk->getZ(), false);
 		}
 
-		$level->setAutoSave(true);
+		$world->setAutoSave(true);
 
-		$msg = '§a(Conversion of '.$level->getFolderName().') Time spent: '.($time).' seconds; Total blocks: '.number_format($total).'; Blocks processed: '.number_format($processed).'; Blocks changed: '.number_format($changed);
+		$msg = '§a(Conversion of '.$world->getFolderName().') Time spent: '.($time).' seconds; Total blocks: '.number_format($total).'; Blocks processed: '.number_format($processed).'; Blocks changed: '.number_format($changed);
 		$sender->sendMessage($msg);
 		$this->getLogger()->notice($msg);
 		return true;
 	}
 
-	public function convertAllBlocks(LevelProvider $provider, int &$total = 0, int &$processed = 0, int &$changed = 0, int &$time): void{
+	public function convertAllBlocks(WorldProvider $provider, int &$total = 0, int &$processed = 0, int &$changed = 0, int &$time): void{
 		$time = time();
 
-		$levelName = $provider->getLevelData()->getName();
+		$worldName = $provider->getWorldData()->getName();
 		$chunkCount = $provider->calculateChunkCount();
 		$total = $chunkCount * 65536;
 		$chunksConverted = 0;
@@ -167,12 +167,12 @@ class Loader extends PluginBase {
 				$inputThread->start();
 			}
 
-			$chunkHash = Level::chunkHash($chunk->getX(), $chunk->getZ());
+			$chunkHash = World::chunkHash($chunk->getX(), $chunk->getZ());
 			$percentage = round(++$chunksConverted * 100 / $chunkCount, 2);
 
 			if($skipChunks !== false and ($skipChunks[$chunkHash] ?? false) === true){
 				if($chunksConverted % $this->progressMessageFrequency === 0){
-					$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; §cSkipped Chunk §b'.($chunksConverted).'/'.$chunkCount);
+					$this->getLogger()->notice('('.$percentage.'%) Converting world "'.$worldName.'"; §cSkipped Chunk §b'.($chunksConverted).'/'.$chunkCount);
 				}
 
 				unset($skipChunks[$chunkHash]);
@@ -184,7 +184,7 @@ class Loader extends PluginBase {
 			}
 
 			if($chunksConverted % $this->progressMessageFrequency === 0){
-				$this->getLogger()->notice('('.$percentage.'%) Converting level "'.$levelName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
+				$this->getLogger()->notice('('.$percentage.'%) Converting world "'.$worldName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
 			}
 
 			try{
@@ -229,6 +229,8 @@ class Loader extends PluginBase {
 		if($deleteSaveFile === true and file_exists($saveFilePath)){
 			unlink($saveFilePath);
 		}
+
+		$inputThread = null;
 
 		$time = time() - $time;
 	}
