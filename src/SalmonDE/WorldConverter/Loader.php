@@ -21,37 +21,56 @@ class Loader extends PluginBase {
 		$this->blocks = json_decode(file_get_contents($this->getDataFolder().'blocks.json'), true)['blocks'];
 
 		$blockMapping = new Map();
-		foreach($this->blocks as $key => $replacement){
-			$keyParts = explode(':', (string) $key);
-			$replacementKeys = explode(':', (string) $replacement);
+		foreach($this->blocks as $block => $replacement){
+			$targetBlock = $this->readElements($block);
+			$replaceBlock = $this->readElements($replacement);
 
-			$replaceId = (int) $replacementKeys[0];
-			$replaceMeta = $replacementKeys[1] ?? null;
-			if($replaceMeta !== null){
-				$replaceMeta = (int) $replaceMeta;
+			if($targetBlock['meta'] === null){
+				$targetBlock['meta'] = range(0, 15);
 			}
 
-			$blockId = (int) $keyParts[0];
-			if(isset($keyParts[1])){
-				$fullId = $replaceId;
-				$fullMeta = $replaceMeta ?? $blockMeta;
+			if($replaceBlock['meta'] !== null){
+				$replaceBlock['meta'] = $replaceBlock['meta'][0];
+			}
 
-				$blockMapping[$this->getFullBlock($blockId, $blockMeta = (int) $keyParts[1])] = $this->getFullBlock($fullId, $fullMeta);
-			}else{
-				for($meta = 0; $meta < 16; ++$meta){
-					$fullId = $replaceId;
-					$fullMeta = $replaceMeta ?? $meta;
-
-					$blockMapping[$this->getFullBlock($blockId, $meta)] = $this->getFullBlock($fullId, $fullMeta);
-				}
+			foreach($targetBlock['meta'] as $meta){
+				$blockMapping[$this->getFullBlock($targetBlock['id'], $meta)] = $this->getFullBlock($replaceBlock['id'], $replaceBlock['meta'] ?? $meta);
 			}
 		}
 
 		$this->blocks = $blockMapping;
+
+		foreach($this->blocks as $from => $to){
+			$from = \pocketmine\block\BlockFactory::fromFullBlock($from);
+			$to = \pocketmine\block\BlockFactory::fromFullBlock($to);
+			$this->getLogger()->debug('Mapped '.($from->getName() === 'Unknown' ? $from->getId().':'.$from->getMeta() : $from->getName()).' to '.($to->getName() === 'Unknown' ? $to->getId().':'.$to->getMeta() : $to->getName()));
+		}
 	}
 
 	private function getFullBlock(int $id, int $meta): int{
 		return ($id << 4) | $meta;
+	}
+
+	private function readElements($value): array{
+		if(is_string($value)){
+			$array = explode(':', $value);
+		}else{
+			$array = [$value];
+		}
+
+		foreach($array as $key => $element){
+			$array[$key] = (int) $element;
+		}
+
+		$array['id'] = $array[0];
+
+		if(isset($array[1])){
+			$array['meta'] = [$array[1]];
+		}else{
+			$array['meta'] = null;
+		}
+
+		return $array;
 	}
 
 	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $params): bool{
