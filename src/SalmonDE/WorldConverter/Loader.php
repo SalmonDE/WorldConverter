@@ -112,6 +112,8 @@ class Loader extends PluginBase {
 		$changed = 0;
 		$time = 0;
 
+		$this->getLogger()->notice($msg = 'Converting world '.$world->getFolderName().' ...');
+		$sender->sendMessage($msg);
 		$this->convertAllBlocks($world->getProvider(), $total, $processed, $changed, $time);
 
 		foreach($world->getChunks() as $chunk){
