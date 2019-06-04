@@ -3,20 +3,25 @@ declare(strict_types = 1);
 
 namespace SalmonDE\WorldConverter;
 
-use \Thread;
+use Thread;
 
 class InputCheckThread extends Thread {
 
+	public $listening = true;
 	private $input = null;
 
 	public function run(): void{
-		$input = $this->waitForInput();
-		$this->checkInput(strtolower($input));
+		while($this->listening === true){
+			if($this->getInput() === null){
+				$input = $this->waitForInput();
+				$this->checkInput(strtolower($input));
+			}
+		}
 	}
 
-	private function checkInput(string $input): void{
-		if($input === 'stop'){
-			$this->setInput('stop');
+	public function checkInput(string $input): void{
+		if(trim($input) === 'stop'){
+			$this->setInput($input);
 		}
 	}
 
@@ -28,7 +33,11 @@ class InputCheckThread extends Thread {
 		$this->input = $input;
 	}
 
-	private function waitForInput(int $length = 1024, int $timeout = 5): string{
+	public function resetInput(): void{
+		$this->input = null;
+	}
+
+	public function waitForInput(int $length = 1024, int $timeout = 8): string{
 		$cmdLine = fopen('php://stdin', 'r');
 
 		$read = [$cmdLine];
@@ -38,7 +47,7 @@ class InputCheckThread extends Thread {
 		if(stream_select($read, $write, $except, $timeout) > 0){
 			return trim(stream_get_line($cmdLine, $length, PHP_EOL));
 		}else{
-			return ''; // hack to prevent blocking the main thread on join
+			return '';
 		}
 	}
 }

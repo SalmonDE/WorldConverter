@@ -148,10 +148,10 @@ class Loader extends PluginBase {
 		$inputThread->start();
 
 		foreach($provider->getAllChunks() as $chunk){
-			if(!$inputThread->isRunning() and !$inputThread->isJoined()){
-				$inputThread->join();
-
+			if($inputThread->getInput() !== null){
 				$input = $inputThread->getInput();
+				$inputThread->resetInput();
+
 				if($input === 'stop'){
 					$this->getLogger()->notice('Stopping conversion ...');
 					$deleteSaveFile = false;
@@ -164,9 +164,6 @@ class Loader extends PluginBase {
 					$this->getLogger()->notice('Conversion stopped, time passed: '.(time() - $time));
 					break;
 				}
-
-				$inputThread = new InputCheckThread();
-				$inputThread->start();
 			}
 
 			$chunkHash = World::chunkHash($chunk->getX(), $chunk->getZ());
@@ -232,6 +229,7 @@ class Loader extends PluginBase {
 			unlink($saveFilePath);
 		}
 
+		$inputThread->listening = false;
 		$inputThread = null;
 
 		$time = time() - $time;
