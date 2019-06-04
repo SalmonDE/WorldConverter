@@ -186,14 +186,6 @@ class Loader extends PluginBase {
 				$this->getLogger()->notice('('.$percentage.'%) Converting world "'.$worldName.'"; Chunk '.($chunksConverted).'/'.$chunkCount);
 			}
 
-			try{
-				foreach($chunk->getEntities() as $entity){
-					$entity->close();
-				}
-			}catch(\Throwable $e){
-				$this->getLogger()->warning('Corrupted entities in chunk '.$chunk->getX().';'.$chunk->getZ());
-			}
-
 			foreach($chunk->getSubChunks() as $subChunk){
 				if($subChunk instanceof EmptySubChunk){
 					continue;
