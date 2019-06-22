@@ -21,7 +21,7 @@ class Loader extends PluginBase {
 	private $saveThreshold;
 	private $progressMessageFrequency;
 
-	public function onEnable(): void{
+	protected function onEnable(): void{
 		$this->saveResource('config.yml');
 		$this->saveResource('blocks.json');
 
