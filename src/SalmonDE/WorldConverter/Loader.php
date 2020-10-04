@@ -51,8 +51,8 @@ class Loader extends PluginBase {
 		$this->blocks = $blockMapping;
 
 		foreach($this->blocks as $from => $to){
-			$from = BlockFactory::fromFullBlock($from);
-			$to = BlockFactory::fromFullBlock($to);
+			$from = BlockFactory::getInstance()->fromFullBlock($from);
+			$to = BlockFactory::getInstance()->fromFullBlock($to);
 			$this->getLogger()->debug('Mapped '.($from->getName() === 'Unknown' ? $from->getId().':'.$from->getMeta() : $from->getName()).' to '.($to->getName() === 'Unknown' ? $to->getId().':'.$to->getMeta() : $to->getName()));
 		}
 	}
