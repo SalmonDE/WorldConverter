@@ -1,9 +1,16 @@
 name: WorldConverter
 main: SalmonDE\WorldConverter\Loader
 author: SalmonDE
-version: 1.0.0
+version: 1.0.1
 api: [4.0.0]
 commands:
     convertworld:
         usage: /convertworld <name>
         permission: convert.world.cmd
+permissions:
+    convert:
+        children:
+            convert.world:
+                children:
+                    convert.world.cmd:
+                        default: op
